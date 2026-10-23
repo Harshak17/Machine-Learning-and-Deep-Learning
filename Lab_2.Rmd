@@ -1,0 +1,633 @@
+---
+title: "MAST6100 Week 3 Computing Session"
+output: html_document
+---
+
+# 1. Wells in Bangladesh Data
+
+## Load the data
+
+The dataset contains information about whether households switched from an unsafe well to a safer one.
+
+```{r}
+wells <- read.csv("wells.csv", header = TRUE)
+```
+
+
+
+```{r}
+table(wells$switch)
+```
+
+
+```{r}
+library(janitor)
+
+tabyl(wells, switch)
+```
+
+
+
+```{r}
+fit_wells <- glm(
+  switch ~ dist,
+  family = binomial,
+  data = wells
+)
+```
+
+
+
+```{r}
+summary(fit_wells)
+```
+
+
+
+```{r}
+fit_wells2 <- glm(
+  switch ~ arsenic,
+  family = binomial,
+  data = wells
+)
+```
+
+
+
+```{r}
+summary(fit_wells2)
+```
+#As the summary suggest, arsenic is also important to explain the probability of switching to a new well.
+
+
+```{r}
+titanic <- read.csv("titanic.csv")
+```
+
+This dataset contains information about Titanic passengers.
+
+Response variable:
+
+- survived = 1 → survived
+- survived = 0 → died
+
+
+
+```{r}
+table(titanic$sex, titanic$survived)
+```
+
+
+```{r}
+prop.table(
+  table(titanic$sex, titanic$survived),
+  1
+)
+```
+
+### Why use margin = 1?
+
+The value `1` tells R to calculate row proportions.
+
+This allows comparison of survival rates between males and females.
+
+
+```{r}
+prop.table(
+  table(titanic$age, titanic$survived),
+  1
+)
+```
+
+
+```{r}
+titanic_model1 <- glm(
+  survived ~ sex,
+  data = titanic
+)
+```
+
+
+
+```{r}
+summary(titanic_model1)
+```
+
+### Interpretation
+
+The coefficient for `sexMale` is negative.
+
+This means:
+
+- Males are less likely to survive than females.
+- Female is the reference category.
+
+
+
+
+
+```{r}
+titanic_model2 <- glm(
+  survived ~ age,
+  data = titanic
+)
+```
+
+
+
+```{r}
+summary(titanic_model2)
+```
+
+### Interpretation
+
+The coefficient for `ageChild` is positive.
+
+This indicates that children are more likely to survive than adults.
+
+
+
+```{r}
+nyc <- read.csv("nyc.csv")
+```
+
+The goal is to predict whether a restaurant costs more than $40.
+
+---
+
+# Create Binary Response Variable
+
+## Generate a new variable
+
+```{r}
+nyc$price_binary <- ifelse(
+  nyc$Price > 40,
+  1,
+  0
+)
+```
+
+### What does this do?
+
+Creates:
+
+- 1 = Price greater than $40
+- 0 = Price $40 or less
+
+This transforms the response variable into a binary outcome suitable for logistic regression.
+
+
+
+```{r}
+table(nyc$price_binary)
+```
+
+
+
+```{r}
+ggplot(nyc) +
+  theme_minimal() +
+  geom_boxplot(
+    aes(
+      y = Food,
+      x = factor(price_binary)
+    )
+  )
+```
+
+
+```{r}
+ggplot(nyc) +
+  theme_minimal() +
+  geom_boxplot(
+    aes(
+      y = Decor,
+      x = factor(price_binary)
+    )
+  )
+```
+
+### Interpretation
+
+Restaurants with higher Decor ratings tend to have higher prices.
+
+
+
+```{r}
+ggplot(nyc) +
+  theme_minimal() +
+  geom_boxplot(
+    aes(
+      y = Service,
+      x = factor(price_binary)
+    )
+  )
+```
+
+### Interpretation
+
+Higher Service ratings also appear associated with higher prices.
+
+
+
+```{r}
+model_nyc1 <- glm(
+  price_binary ~ Food,
+  data = nyc,
+  family = binomial
+)
+```
+
+
+
+```{r}
+summary(model_nyc1)
+```
+
+
+
+
+
+```{r}
+wells <- read.csv("wells.csv", header = TRUE)
+```
+
+
+
+```{r}
+fit_wells <- glm(
+  switch ~ dist + arsenic + assoc + educ,
+  family = binomial,
+  data = wells
+)
+```
+
+
+```{r}
+summary(fit_wells)
+```
+
+
+
+```{r}
+model <- glm(
+  switch ~ arsenic + dist + assoc + educ,
+  data = wells,
+  family = binomial
+)
+```
+
+
+```{r}
+predict(
+  model,
+  newdata = data.frame(
+    arsenic = 2,
+    dist = 50,
+    assoc = 1,
+    educ = 10
+  ),
+  type = "response"
+)
+```
+
+
+
+```{r}
+type = "response"
+```
+
+
+
+```{r}
+predict(
+  model,
+  newdata = data.frame(
+    arsenic = 2,
+    dist = 150,
+    assoc = 1,
+    educ = 10
+  ),
+  type = "response"
+)
+```
+
+
+
+```{r}
+titanic <- read.csv("titanic.csv")
+```
+
+
+```{r}
+model_titanic <- glm(
+  survived ~ .,
+  data = titanic,
+  family = binomial
+)
+```
+
+
+
+```{r}
+summary(model_titanic)
+```
+
+
+```{r}
+predict(
+  model_titanic,
+  newdata = data.frame(
+    sex = "Female",
+    class = "1st",
+    age = "Child"
+  ),
+  type = "response"
+)
+```
+
+
+```{r}
+predict(
+  model_titanic,
+  newdata = data.frame(
+    sex = "Male",
+    class = "3rd",
+    age = "Adult"
+  ),
+  type = "response"
+)
+```
+
+
+
+```{r}
+all_possible_scenarios <- expand.grid(
+  sex = c("Male", "Female"),
+  age = c("Child", "Adult"),
+  class = c("1st", "2nd", "3rd", "Crew")
+)
+```
+
+
+```{r}
+all_possible_scenarios$prob <- predict(
+  model_titanic,
+  newdata = all_possible_scenarios,
+  type = "response"
+)
+```
+
+
+```{r}
+ggplot(all_possible_scenarios) +
+  geom_line(
+    aes(
+      x = sex,
+      y = prob,
+      color = class,
+      group = class
+    )
+  ) +
+  facet_wrap(~age) +
+  theme_bw()
+```
+
+
+```{r}
+library(hnp)
+library(MASS)
+```
+
+
+
+
+
+
+
+```{r}
+model_dist <- glm(
+  switch ~ dist,
+  data = wells,
+  family = binomial
+)
+```
+
+---
+
+## Residual Plot
+
+```{r}
+hnp(model_dist)
+```
+
+
+```{r}
+model_arsenic <- glm(
+  switch ~ arsenic,
+  data = wells,
+  family = binomial
+)
+```
+
+
+```{r}
+hnp(model_arsenic)
+```
+
+
+
+
+```{r}
+model_twovar <- glm(
+  switch ~ dist + arsenic,
+  data = wells,
+  family = binomial
+)
+```
+
+```{r}
+hnp(model_twovar)
+```
+
+
+```{r}
+model_fourvar <- glm(
+  switch ~ dist + arsenic + assoc + educ,
+  data = wells,
+  family = binomial
+)
+```
+
+---
+
+## Residual Plot
+
+```{r}
+hnp(model_fourvar)
+```
+
+
+
+
+
+```{r}
+model_to_varselection <- glm(
+  switch ~ assoc * (dist + arsenic + educ),
+  data = wells,
+  family = binomial
+)
+```
+
+
+
+```{r}
+best_model <- stepAIC(
+  model_to_varselection,
+  direction = "both"
+)
+```
+
+### What is AIC?
+
+AIC = Akaike Information Criterion
+
+Used to compare models.
+
+Lower AIC values indicate:
+
+- better fit
+- less unnecessary complexity
+
+
+
+```{r}
+summary(best_model)
+```
+
+
+
+```{r}
+best_model2 <- glm(
+  switch ~ assoc + dist + arsenic + educ,
+  data = wells,
+  family = binomial
+)
+```
+
+
+```{r}
+summary(best_model2)
+```
+
+
+
+```{r}
+best_model3 <- glm(
+  switch ~ dist + arsenic + educ,
+  data = wells,
+  family = binomial
+)
+```
+
+```{r}
+summary(best_model3)
+```
+
+
+
+
+```{r}
+predict(
+  best_model,
+  newdata = data.frame(
+    dist = 100,
+    arsenic = 2,
+    assoc = 0,
+    educ = 8
+  ),
+  type = "response"
+)
+```
+
+
+
+```{r}
+nyc <- read.csv("nyc.csv")
+```
+
+---
+
+## Create Binary Response Variable
+
+```{r}
+nyc$price_binary <- ifelse(
+  nyc$Price > 40,
+  1,
+  0
+)
+```
+
+
+
+```{r}
+model_food <- glm(
+  price_binary ~ Food,
+  data = nyc,
+  family = binomial
+)
+```
+
+
+
+```{r}
+hnp(model_food)
+```
+
+
+# Service Model
+
+```{r}
+model_service <- glm(
+  price_binary ~ Service,
+  data = nyc,
+  family = binomial
+)
+```
+
+
+
+```{r}
+hnp(model_service)
+```
+
+
+
+```{r}
+model_decor <- glm(
+  price_binary ~ Decor,
+  data = nyc,
+  family = binomial
+)
+```
+
+
+```{r}
+hnp(model_decor)
+```
+
+
+```{r}
+model_all <- glm(
+  price_binary ~ Food + Decor + Service,
+  data = nyc,
+  family = binomial
+)
+```
+
+
+```{r}
+stepAIC(model_all)
+```
+
+
